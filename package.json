@@ -1,7 +1,7 @@
 {
   "name": "anime-character-recognizer",
   "version": "1.0.0",
-  "description": "A web application for anime character recognition using dio.jite.me API",
+  "description": "A web application for anime character recognition using animeTrace API",
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
