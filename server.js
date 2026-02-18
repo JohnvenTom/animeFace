@@ -8,13 +8,14 @@ const FormData = require('form-data');
 // 创建Express应用
 const app = express();
 const PORT = process.env.PORT || 3000;
+const isVercel = process.env.VERCEL === '1';
 
 // 配置multer用于处理文件上传
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 限制文件大小为5MB
+    fileSize: 4 * 1024 * 1024 // Vercel 限制，减少到4MB
   },
   fileFilter: (req, file, cb) => {
     // 只允许图片文件
@@ -28,8 +29,9 @@ const upload = multer({
 
 // 中间件
 app.use(cors());
-app.use(express.json());
-app.use(express.static('public')); // 提供静态文件服务
+app.use(express.json({ limit: '4mb' }));
+app.use(express.urlencoded({ limit: '4mb', extended: true }));
+app.use(express.static(path.join(__dirname, 'public'))); // 提供静态文件服务
 
 /**
  * 处理图片识别请求
@@ -83,12 +85,12 @@ app.post('/api/recognize', upload.single('file'), async (req, res) => {
       form.append('ai_detect', aiDetect);
     }
 
-    // 调用animeTrace识别API
+    // 调用animeTrace识别API - Vercel超时限制为10秒
     const response = await axios.post('https://api.animetrace.com/v1/search', form, {
       headers: {
         ...form.getHeaders(),
       },
-      timeout: 30000 // 30秒超时
+      timeout: isVercel ? 10000 : 30000 // Vercel用10秒，本地用30秒
     });
 
     // 返回API响应给前端
@@ -176,28 +178,23 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-/**
- * 启动服务器
- * 
- * @description
- * 在指定端口上启动Express服务器，监听客户端请求
- * 
- * @throws {Error} 当服务器启动失败时抛出错误
- */
-app.listen(PORT, () => {
-  console.log(`Anime character recognition server is running on port ${PORT}`);
-  console.log(`Visit http://localhost:${PORT} to use the application`);
-});
-
-// 错误处理中间件
+// 错误处理中间件 - 放在路由之后
 app.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ error: '文件大小超过限制（最大5MB）' });
+      return res.status(400).json({ error: '文件大小超过限制（最大4MB）' });
     }
   }
   console.error('Server error:', error);
   res.status(500).json({ error: '服务器内部错误' });
 });
+
+// 只在非 Vercel 环境中启动服务器
+if (!isVercel) {
+  app.listen(PORT, () => {
+    console.log(`Anime character recognition server is running on port ${PORT}`);
+    console.log(`Visit http://localhost:${PORT} to use the application`);
+  });
+}
 
 module.exports = app;
