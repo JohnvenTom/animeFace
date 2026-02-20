@@ -1347,6 +1347,10 @@
       }
     }
   </style>
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
   <div id="background-container"></div>
@@ -1978,7 +1982,7 @@
       // 播放通知音效
       window.playNotificationSound = function() {
         try {
-          // 创建音频上下文
+          // 创��音频上下文
           const audioContext = new (window.AudioContext || window.webkitAudioContext)();
           
           // 创建 oscillator 节点
